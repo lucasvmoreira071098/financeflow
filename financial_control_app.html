@@ -1,0 +1,603 @@
+
+<h2 class="sr-only">Sistema de controle financeiro com tarefas e gráficos de gastos</h2>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font-sans); }
+:root {
+  --c-accent: #1D9E75;
+  --c-accent-light: #E1F5EE;
+  --c-accent-dark: #0F6E56;
+  --c-danger: #D85A30;
+  --c-warning: #EF9F27;
+  --c-blue: #378ADD;
+}
+.app { display: grid; grid-template-columns: 220px 1fr; min-height: 640px; }
+.sidebar {
+  background: var(--color-background-secondary);
+  border-right: 0.5px solid var(--color-border-tertiary);
+  padding: 16px 0;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.sidebar-logo {
+  padding: 0 16px 16px;
+  font-size: 15px; font-weight: 500;
+  color: var(--color-text-primary);
+  display: flex; align-items: center; gap: 8px;
+  border-bottom: 0.5px solid var(--color-border-tertiary);
+  margin-bottom: 8px;
+}
+.sidebar-logo i { color: var(--c-accent); font-size: 20px; }
+.nav-section { padding: 0 8px; margin-bottom: 4px; }
+.nav-label { font-size: 11px; font-weight: 500; color: var(--color-text-tertiary); padding: 4px 8px; text-transform: uppercase; letter-spacing: 0.06em; }
+.nav-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 10px; border-radius: var(--border-radius-md);
+  font-size: 13px; color: var(--color-text-secondary);
+  cursor: pointer; transition: background 0.12s;
+  border: none; background: none; width: 100%; text-align: left;
+}
+.nav-item:hover { background: var(--color-background-primary); color: var(--color-text-primary); }
+.nav-item.active { background: var(--color-background-primary); color: var(--c-accent); font-weight: 500; }
+.nav-item.active i { color: var(--c-accent); }
+.nav-item i { font-size: 16px; }
+.badge { margin-left: auto; background: var(--c-accent); color: white; font-size: 10px; font-weight: 500; padding: 1px 6px; border-radius: 10px; }
+.main { padding: 20px; overflow: auto; background: var(--color-background-tertiary); }
+.page { display: none; }
+.page.active { display: block; }
+.page-title { font-size: 18px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 16px; }
+
+/* Dashboard */
+.metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
+.metric { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 14px; }
+.metric-label { font-size: 12px; color: var(--color-text-secondary); margin-bottom: 6px; display: flex; align-items: center; gap: 4px; }
+.metric-value { font-size: 22px; font-weight: 500; color: var(--color-text-primary); }
+.metric-sub { font-size: 11px; color: var(--color-text-tertiary); margin-top: 2px; }
+.metric-value.danger { color: var(--c-danger); }
+.metric-value.success { color: var(--c-accent); }
+
+.charts-row { display: grid; grid-template-columns: 1.4fr 1fr; gap: 12px; margin-bottom: 16px; }
+.card { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 16px; }
+.card-title { font-size: 13px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 14px; }
+.chart-wrap { position: relative; width: 100%; height: 180px; }
+.chart-wrap-sm { position: relative; width: 100%; height: 180px; }
+
+/* Tarefas */
+.tasks-layout { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.task-col { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 14px; }
+.task-col-title { font-size: 13px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+.task-col-title .dot { width: 8px; height: 8px; border-radius: 50%; }
+.dot-daily { background: var(--c-blue); }
+.dot-weekly { background: var(--c-accent); }
+.dot-monthly { background: var(--c-warning); }
+.task-item {
+  display: flex; align-items: flex-start; gap: 8px;
+  padding: 8px 0; border-bottom: 0.5px solid var(--color-border-tertiary);
+  cursor: pointer;
+}
+.task-item:last-child { border-bottom: none; }
+.task-check {
+  width: 16px; height: 16px; border-radius: 4px;
+  border: 1.5px solid var(--color-border-secondary);
+  flex-shrink: 0; margin-top: 1px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+}
+.task-check.done { background: var(--c-accent); border-color: var(--c-accent); }
+.task-check.done::after { content: '✓'; font-size: 10px; color: white; font-weight: 600; }
+.task-text { font-size: 13px; color: var(--color-text-primary); line-height: 1.4; }
+.task-text.done { text-decoration: line-through; color: var(--color-text-tertiary); }
+.task-tag { font-size: 10px; padding: 1px 6px; border-radius: 8px; margin-top: 3px; display: inline-block; }
+.tag-income { background: #E1F5EE; color: #0F6E56; }
+.tag-expense { background: #FAECE7; color: #993C1D; }
+.tag-review { background: #FAEEDA; color: #854F0B; }
+.task-add { display: flex; align-items: center; gap: 6px; padding: 8px 0; font-size: 12px; color: var(--color-text-tertiary); cursor: pointer; }
+.task-add:hover { color: var(--c-accent); }
+
+/* Gastos */
+.expenses-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.filter-tabs { display: flex; gap: 4px; }
+.filter-tab { padding: 5px 12px; font-size: 12px; border-radius: var(--border-radius-md); border: 0.5px solid var(--color-border-tertiary); background: none; color: var(--color-text-secondary); cursor: pointer; }
+.filter-tab.active { background: var(--c-accent); color: white; border-color: var(--c-accent); }
+.add-btn { display: flex; align-items: center; gap: 4px; padding: 5px 12px; font-size: 12px; border-radius: var(--border-radius-md); border: 0.5px solid var(--c-accent); color: var(--c-accent); background: none; cursor: pointer; }
+.add-btn:hover { background: var(--c-accent-light); }
+
+.expenses-list { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); overflow: hidden; }
+.expense-row { display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-bottom: 0.5px solid var(--color-border-tertiary); }
+.expense-row:last-child { border-bottom: none; }
+.exp-icon { width: 34px; height: 34px; border-radius: var(--border-radius-md); display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+.exp-info { flex: 1; min-width: 0; }
+.exp-name { font-size: 13px; font-weight: 500; color: var(--color-text-primary); }
+.exp-cat { font-size: 11px; color: var(--color-text-tertiary); }
+.exp-date { font-size: 11px; color: var(--color-text-tertiary); }
+.exp-amount { font-size: 14px; font-weight: 500; }
+.exp-amount.neg { color: var(--c-danger); }
+.exp-amount.pos { color: var(--c-accent); }
+
+.charts-expenses { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+
+/* Legend */
+.legend { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 10px; }
+.legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--color-text-secondary); }
+.legend-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+
+/* Modal overlay (add expense) */
+.modal-overlay { display: none; position: absolute; inset: 0; background: rgba(0,0,0,0.35); border-radius: var(--border-radius-lg); align-items: center; justify-content: center; z-index: 99; }
+.modal-overlay.open { display: flex; }
+.modal { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 20px; width: 300px; }
+.modal-title { font-size: 15px; font-weight: 500; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; }
+.modal-close { background: none; border: none; cursor: pointer; color: var(--color-text-tertiary); font-size: 18px; }
+.form-group { margin-bottom: 12px; }
+.form-label { font-size: 12px; color: var(--color-text-secondary); margin-bottom: 4px; display: block; }
+.form-input { width: 100%; padding: 7px 10px; font-size: 13px; border-radius: var(--border-radius-md); border: 0.5px solid var(--color-border-secondary); background: var(--color-background-secondary); color: var(--color-text-primary); }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.submit-btn { width: 100%; padding: 8px; background: var(--c-accent); color: white; border: none; border-radius: var(--border-radius-md); font-size: 13px; font-weight: 500; cursor: pointer; margin-top: 4px; }
+.submit-btn:hover { background: var(--c-accent-dark); }
+
+/* Progress bars */
+.budget-item { margin-bottom: 12px; }
+.budget-header { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 5px; }
+.budget-label { color: var(--color-text-secondary); }
+.budget-value { color: var(--color-text-primary); font-weight: 500; }
+.progress-bar { height: 6px; background: var(--color-background-secondary); border-radius: 10px; overflow: hidden; }
+.progress-fill { height: 100%; border-radius: 10px; transition: width 0.6s ease; }
+
+.wrapper { position: relative; }
+</style>
+
+<div class="wrapper">
+<div class="app">
+  <!-- Sidebar -->
+  <nav class="sidebar">
+    <div class="sidebar-logo">
+      <i class="ti ti-coin" aria-hidden="true"></i>
+      FinanceFlow
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Visão geral</div>
+      <button class="nav-item active" onclick="showPage('dashboard', this)">
+        <i class="ti ti-layout-dashboard" aria-hidden="true"></i> Dashboard
+      </button>
+      <button class="nav-item" onclick="showPage('tarefas', this)">
+        <i class="ti ti-checklist" aria-hidden="true"></i> Tarefas
+        <span class="badge">5</span>
+      </button>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Financeiro</div>
+      <button class="nav-item" onclick="showPage('gastos', this)">
+        <i class="ti ti-arrow-up-circle" aria-hidden="true"></i> Gastos
+      </button>
+      <button class="nav-item" onclick="showPage('orcamento', this)">
+        <i class="ti ti-target" aria-hidden="true"></i> Orçamento
+      </button>
+    </div>
+    <div style="margin-top: auto; padding: 0 8px;">
+      <div style="padding: 12px 10px; border-radius: var(--border-radius-md); background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary);">
+        <div style="font-size: 12px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 4px;">Maio 2026</div>
+        <div style="font-size: 11px; color: var(--color-text-secondary); margin-bottom: 8px;">Saldo disponível</div>
+        <div style="font-size: 18px; font-weight: 500; color: var(--c-accent);">R$ 2.340,00</div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main content -->
+  <main class="main">
+
+    <!-- DASHBOARD -->
+    <div id="page-dashboard" class="page active">
+      <div class="page-title">Dashboard</div>
+      <div class="metrics">
+        <div class="metric">
+          <div class="metric-label"><i class="ti ti-arrow-up-right" style="color: var(--c-accent); font-size: 14px;" aria-hidden="true"></i> Receita</div>
+          <div class="metric-value success">R$ 6.800</div>
+          <div class="metric-sub">+8% vs mês anterior</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label"><i class="ti ti-arrow-down-right" style="color: var(--c-danger); font-size: 14px;" aria-hidden="true"></i> Gastos</div>
+          <div class="metric-value danger">R$ 4.460</div>
+          <div class="metric-sub">-3% vs mês anterior</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label"><i class="ti ti-piggy-bank" style="color: var(--c-blue); font-size: 14px;" aria-hidden="true"></i> Poupança</div>
+          <div class="metric-value" style="color: var(--c-blue);">R$ 2.340</div>
+          <div class="metric-sub">34% da renda</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label"><i class="ti ti-checklist" style="color: var(--c-warning); font-size: 14px;" aria-hidden="true"></i> Tarefas</div>
+          <div class="metric-value" style="color: var(--c-warning);">5/12</div>
+          <div class="metric-sub">concluídas hoje</div>
+        </div>
+      </div>
+
+      <div class="charts-row">
+        <div class="card">
+          <div class="card-title">Receita vs Gastos — últimos 6 meses</div>
+          <div class="legend">
+            <span class="legend-item"><span class="legend-dot" style="background:#1D9E75;"></span>Receita</span>
+            <span class="legend-item"><span class="legend-dot" style="background:#D85A30;"></span>Gastos</span>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="lineChart" role="img" aria-label="Gráfico de linhas com receita e gastos mensais dos últimos 6 meses">Receita e gastos dos últimos 6 meses.</canvas>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Gastos por categoria</div>
+          <div class="chart-wrap-sm">
+            <canvas id="donutChart" role="img" aria-label="Gráfico de rosca com distribuição de gastos por categoria">Distribuição de gastos por categoria.</canvas>
+          </div>
+          <div class="legend" style="margin-top: 10px; justify-content: center;">
+            <span class="legend-item"><span class="legend-dot" style="background:#378ADD;"></span>Moradia 35%</span>
+            <span class="legend-item"><span class="legend-dot" style="background:#1D9E75;"></span>Alimentação 22%</span>
+            <span class="legend-item"><span class="legend-dot" style="background:#EF9F27;"></span>Transporte 18%</span>
+            <span class="legend-item"><span class="legend-dot" style="background:#D85A30;"></span>Outros 25%</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Últimas transações</div>
+        <div id="recent-transactions"></div>
+      </div>
+    </div>
+
+    <!-- TAREFAS -->
+    <div id="page-tarefas" class="page">
+      <div class="page-title">Tarefas financeiras</div>
+      <div class="tasks-layout">
+        <div class="task-col">
+          <div class="task-col-title"><span class="dot dot-daily"></span> Diárias</div>
+          <div id="tasks-daily"></div>
+          <div class="task-add" onclick="addTask('daily')"><i class="ti ti-plus" aria-hidden="true"></i> Nova tarefa</div>
+        </div>
+        <div class="task-col">
+          <div class="task-col-title"><span class="dot dot-weekly"></span> Semanais</div>
+          <div id="tasks-weekly"></div>
+          <div class="task-add" onclick="addTask('weekly')"><i class="ti ti-plus" aria-hidden="true"></i> Nova tarefa</div>
+        </div>
+        <div class="task-col">
+          <div class="task-col-title"><span class="dot dot-monthly"></span> Mensais</div>
+          <div id="tasks-monthly"></div>
+          <div class="task-add" onclick="addTask('monthly')"><i class="ti ti-plus" aria-hidden="true"></i> Nova tarefa</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GASTOS -->
+    <div id="page-gastos" class="page">
+      <div class="expenses-header">
+        <div class="page-title" style="margin-bottom: 0;">Gastos</div>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <div class="filter-tabs">
+            <button class="filter-tab active" onclick="filterExp('todos', this)">Todos</button>
+            <button class="filter-tab" onclick="filterExp('entrada', this)">Entradas</button>
+            <button class="filter-tab" onclick="filterExp('saida', this)">Saídas</button>
+          </div>
+          <button class="add-btn" onclick="openModal()"><i class="ti ti-plus" aria-hidden="true"></i> Adicionar</button>
+        </div>
+      </div>
+      <div class="charts-expenses">
+        <div class="card">
+          <div class="card-title">Gastos mensais por semana</div>
+          <div class="legend">
+            <span class="legend-item"><span class="legend-dot" style="background:#378ADD;"></span>Esta semana</span>
+            <span class="legend-item"><span class="legend-dot" style="background:#B5D4F4;"></span>Semana passada</span>
+          </div>
+          <div style="position: relative; width: 100%; height: 150px;">
+            <canvas id="barExpenses" role="img" aria-label="Comparativo de gastos semanais">Gastos por semana.</canvas>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Evolução do saldo</div>
+          <div style="position: relative; width: 100%; height: 150px;">
+            <canvas id="balanceChart" role="img" aria-label="Evolução do saldo ao longo do mês">Evolução do saldo mensal.</canvas>
+          </div>
+        </div>
+      </div>
+      <div class="expenses-list" id="exp-list"></div>
+    </div>
+
+    <!-- ORÇAMENTO -->
+    <div id="page-orcamento" class="page">
+      <div class="page-title">Orçamento mensal</div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div class="card">
+          <div class="card-title">Metas de gastos</div>
+          <div id="budget-bars"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Resumo do mês</div>
+          <div style="position: relative; width: 100%; height: 200px;">
+            <canvas id="budgetChart" role="img" aria-label="Comparativo entre orçamento planejado e realizado">Orçamento planejado vs realizado.</canvas>
+          </div>
+        </div>
+      </div>
+      <div class="card" style="margin-top: 12px;">
+        <div class="card-title">Dicas de economia</div>
+        <div id="tips-list"></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-title">
+      Nova transação
+      <button class="modal-close" onclick="closeModal()"><i class="ti ti-x" aria-hidden="true"></i></button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Descrição</label>
+      <input class="form-input" id="m-desc" placeholder="Ex: Aluguel" />
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Valor (R$)</label>
+        <input class="form-input" id="m-val" type="number" placeholder="0,00" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tipo</label>
+        <select class="form-input" id="m-type">
+          <option value="saida">Saída</option>
+          <option value="entrada">Entrada</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Categoria</label>
+      <select class="form-input" id="m-cat">
+        <option>Moradia</option>
+        <option>Alimentação</option>
+        <option>Transporte</option>
+        <option>Saúde</option>
+        <option>Lazer</option>
+        <option>Outros</option>
+      </select>
+    </div>
+    <button class="submit-btn" onclick="saveTransaction()">Salvar transação</button>
+  </div>
+</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const catIcons = { Moradia:'ti-home', Alimentação:'ti-tools-kitchen-2', Transporte:'ti-car', Saúde:'ti-heart', Lazer:'ti-device-gamepad-2', Outros:'ti-dots', Salário:'ti-briefcase', Freelance:'ti-terminal' };
+const catColors = { Moradia:'#E6F1FB', Alimentação:'#E1F5EE', Transporte:'#FAEEDA', Saúde:'#FBEAF0', Lazer:'#EEEDFE', Outros:'#F1EFE8', Salário:'#EAF3DE', Freelance:'#EAF3DE' };
+
+let transactions = [
+  { id:1, desc:'Aluguel', val:1500, type:'saida', cat:'Moradia', date:'10/05' },
+  { id:2, desc:'Salário', val:5000, type:'entrada', cat:'Salário', date:'05/05' },
+  { id:3, desc:'Mercado', val:320, type:'saida', cat:'Alimentação', date:'09/05' },
+  { id:4, desc:'Uber', val:45, type:'saida', cat:'Transporte', date:'08/05' },
+  { id:5, desc:'Freelance', val:1800, type:'entrada', cat:'Freelance', date:'07/05' },
+  { id:6, desc:'Academia', val:89, type:'saida', cat:'Saúde', date:'01/05' },
+  { id:7, desc:'Netflix', val:39, type:'saida', cat:'Lazer', date:'03/05' },
+];
+
+let tasks = {
+  daily: [
+    { id:1, text:'Registrar gastos do dia', tag:'expense', done: false },
+    { id:2, text:'Verificar saldo da conta', tag:'review', done: true },
+    { id:3, text:'Guardar recibos e notas', tag:'review', done: false },
+  ],
+  weekly: [
+    { id:4, text:'Revisar gastos da semana', tag:'review', done: false },
+    { id:5, text:'Pagar faturas pendentes', tag:'expense', done: false },
+    { id:6, text:'Conferir extrato bancário', tag:'review', done: true },
+  ],
+  monthly: [
+    { id:7, text:'Fechar balanço mensal', tag:'review', done: false },
+    { id:8, text:'Planejar orçamento do próximo mês', tag:'review', done: false },
+    { id:9, text:'Transferir para poupança', tag:'income', done: false },
+    { id:10, text:'Declarar IR (mensal)', tag:'review', done: false },
+  ]
+};
+
+function showPage(name, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  el.classList.add('active');
+  if(name==='gastos') renderExpenses();
+  if(name==='orcamento') renderBudget();
+  if(name==='tarefas') renderTasks();
+  if(name==='dashboard') renderRecent();
+}
+
+function renderRecent() {
+  const el = document.getElementById('recent-transactions');
+  const recent = transactions.slice(0,5);
+  el.innerHTML = recent.map(t => `
+    <div class="expense-row">
+      <div class="exp-icon" style="background:${catColors[t.cat]||'#F1EFE8'}">
+        <i class="ti ${catIcons[t.cat]||'ti-dots'}" style="color: var(--color-text-secondary);" aria-hidden="true"></i>
+      </div>
+      <div class="exp-info">
+        <div class="exp-name">${t.desc}</div>
+        <div class="exp-cat">${t.cat}</div>
+      </div>
+      <div style="text-align:right;">
+        <div class="exp-amount ${t.type==='saida'?'neg':'pos'}">${t.type==='saida'?'-':'+'} R$ ${t.val.toLocaleString('pt-BR')}</div>
+        <div class="exp-date">${t.date}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderTasks() {
+  ['daily','weekly','monthly'].forEach(type => {
+    const el = document.getElementById('tasks-'+type);
+    el.innerHTML = tasks[type].map(t => `
+      <div class="task-item" onclick="toggleTask('${type}',${t.id})">
+        <div class="task-check ${t.done?'done':''}"></div>
+        <div>
+          <div class="task-text ${t.done?'done':''}">${t.text}</div>
+          <span class="task-tag tag-${t.tag}">${t.tag==='income'?'receita':t.tag==='expense'?'gasto':'revisão'}</span>
+        </div>
+      </div>
+    `).join('');
+    const doneCount = tasks[type].filter(t=>t.done).length;
+    const total = tasks[type].length;
+    document.querySelector(`#tasks-${type}`).closest('.task-col').querySelector('.task-col-title').innerHTML =
+      `<span class="dot dot-${type}"></span> ${type==='daily'?'Diárias':type==='weekly'?'Semanais':'Mensais'} <span style="margin-left:auto;font-size:11px;color:var(--color-text-tertiary);font-weight:400;">${doneCount}/${total}</span>`;
+  });
+}
+
+function toggleTask(type, id) {
+  const t = tasks[type].find(x=>x.id===id);
+  if(t) { t.done = !t.done; renderTasks(); updateBadge(); }
+}
+
+function updateBadge() {
+  const total = Object.values(tasks).flat().filter(t=>!t.done).length;
+  document.querySelector('.badge').textContent = total;
+}
+
+function addTask(type) {
+  const name = prompt('Nome da nova tarefa:');
+  if(name) {
+    const ids = Object.values(tasks).flat().map(t=>t.id);
+    const newId = Math.max(...ids) + 1;
+    tasks[type].push({ id: newId, text: name, tag:'review', done: false });
+    renderTasks(); updateBadge();
+  }
+}
+
+let expFilter = 'todos';
+function filterExp(f, el) {
+  expFilter = f;
+  document.querySelectorAll('.filter-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  renderExpenses();
+}
+
+function renderExpenses() {
+  const filtered = expFilter==='todos' ? transactions : transactions.filter(t=>t.type===expFilter);
+  const el = document.getElementById('exp-list');
+  el.innerHTML = filtered.map(t => `
+    <div class="expense-row">
+      <div class="exp-icon" style="background:${catColors[t.cat]||'#F1EFE8'}">
+        <i class="ti ${catIcons[t.cat]||'ti-dots'}" style="color: var(--color-text-secondary);" aria-hidden="true"></i>
+      </div>
+      <div class="exp-info">
+        <div class="exp-name">${t.desc}</div>
+        <div class="exp-cat">${t.cat} · ${t.date}</div>
+      </div>
+      <div class="exp-amount ${t.type==='saida'?'neg':'pos'}">${t.type==='saida'?'-':'+'} R$ ${t.val.toLocaleString('pt-BR')}</div>
+    </div>
+  `).join('');
+}
+
+function openModal() { document.getElementById('modal').classList.add('open'); }
+function closeModal() { document.getElementById('modal').classList.remove('open'); }
+
+function saveTransaction() {
+  const desc = document.getElementById('m-desc').value;
+  const val = parseFloat(document.getElementById('m-val').value);
+  const type = document.getElementById('m-type').value;
+  const cat = document.getElementById('m-cat').value;
+  if(!desc || isNaN(val)) return;
+  transactions.unshift({ id: Date.now(), desc, val, type, cat, date: new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}) });
+  closeModal();
+  renderExpenses();
+  document.getElementById('m-desc').value=''; document.getElementById('m-val').value='';
+}
+
+function renderBudget() {
+  const budgets = [
+    { cat:'Moradia', planned:1600, spent:1500 },
+    { cat:'Alimentação', planned:800, spent:320 },
+    { cat:'Transporte', planned:300, spent:45 },
+    { cat:'Saúde', planned:200, spent:89 },
+    { cat:'Lazer', planned:400, spent:39 },
+  ];
+  const colors = ['#378ADD','#1D9E75','#EF9F27','#D87ABF','#D85A30'];
+  document.getElementById('budget-bars').innerHTML = budgets.map((b,i)=>{
+    const pct = Math.min(100, Math.round(b.spent/b.planned*100));
+    const color = pct>90?'#D85A30':pct>70?'#EF9F27':colors[i];
+    return `<div class="budget-item">
+      <div class="budget-header">
+        <span class="budget-label">${b.cat}</span>
+        <span class="budget-value">R$ ${b.spent} / R$ ${b.planned}</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" style="width:${pct}%;background:${color};"></div>
+      </div>
+    </div>`;
+  }).join('');
+
+  const tips = [
+    { icon:'ti-bulb', text:'Você gastou 60% menos com alimentação. Considere aumentar a meta de poupança.' },
+    { icon:'ti-trending-down', text:'Transporte está 85% abaixo do orçado. Ótimo mês!' },
+    { icon:'ti-alert-circle', text:'Aluguel consumiu 94% do limite de moradia. Fique atento.' },
+  ];
+  document.getElementById('tips-list').innerHTML = tips.map(t=>`
+    <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:0.5px solid var(--color-border-tertiary);">
+      <i class="ti ${t.icon}" style="font-size:16px;color:var(--c-accent);margin-top:2px;" aria-hidden="true"></i>
+      <span style="font-size:13px;color:var(--color-text-secondary);">${t.text}</span>
+    </div>
+  `).join('');
+}
+
+function initCharts() {
+  const months = ['Dez','Jan','Fev','Mar','Abr','Mai'];
+  new Chart(document.getElementById('lineChart'), {
+    type: 'line',
+    data: {
+      labels: months,
+      datasets: [
+        { label:'Receita', data:[5200,5800,5500,6200,6000,6800], borderColor:'#1D9E75', backgroundColor:'rgba(29,158,117,0.08)', tension:0.4, fill:true, pointRadius:3, pointBackgroundColor:'#1D9E75' },
+        { label:'Gastos', data:[4800,5100,4600,4900,4200,4460], borderColor:'#D85A30', backgroundColor:'rgba(216,90,48,0.06)', tension:0.4, fill:true, pointRadius:3, pointBackgroundColor:'#D85A30', borderDash:[4,3] }
+      ]
+    },
+    options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{ticks:{callback:v=>'R$'+v.toLocaleString('pt-BR')},grid:{color:'rgba(0,0,0,0.04)'}},x:{grid:{display:false}}} }
+  });
+
+  new Chart(document.getElementById('donutChart'), {
+    type: 'doughnut',
+    data: {
+      labels:['Moradia','Alimentação','Transporte','Outros'],
+      datasets:[{ data:[35,22,18,25], backgroundColor:['#378ADD','#1D9E75','#EF9F27','#D85A30'], borderWidth:0, hoverOffset:4 }]
+    },
+    options:{ responsive:true, maintainAspectRatio:false, cutout:'70%', plugins:{legend:{display:false}}, }
+  });
+
+  new Chart(document.getElementById('barExpenses'), {
+    type:'bar',
+    data:{
+      labels:['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'],
+      datasets:[
+        { label:'Esta semana', data:[120,45,280,90,65,320,40], backgroundColor:'#378ADD', borderRadius:4 },
+        { label:'Semana passada', data:[200,80,150,120,95,180,60], backgroundColor:'#B5D4F4', borderRadius:4 }
+      ]
+    },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{ticks:{callback:v=>'R$'+v},grid:{color:'rgba(0,0,0,0.04)'}},x:{grid:{display:false}}} }
+  });
+
+  new Chart(document.getElementById('balanceChart'), {
+    type:'line',
+    data:{
+      labels:['1','5','10','15','20','25','30'],
+      datasets:[{ data:[3200,4800,3100,4600,2800,4200,2340], borderColor:'#1D9E75', backgroundColor:'rgba(29,158,117,0.1)', tension:0.4, fill:true, pointRadius:2 }]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>'R$'+v.toLocaleString('pt-BR')},grid:{color:'rgba(0,0,0,0.04)'}},x:{grid:{display:false}}}}
+  });
+}
+
+renderRecent(); renderTasks(); initCharts();
+
+setTimeout(()=>{
+  new Chart(document.getElementById('budgetChart'), {
+    type:'bar',
+    data:{
+      labels:['Moradia','Alimentação','Transporte','Saúde','Lazer'],
+      datasets:[
+        { label:'Planejado', data:[1600,800,300,200,400], backgroundColor:'rgba(55,138,221,0.25)', borderRadius:4, borderColor:'#378ADD', borderWidth:1 },
+        { label:'Realizado', data:[1500,320,45,89,39], backgroundColor:'#378ADD', borderRadius:4 }
+      ]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>'R$'+v},grid:{color:'rgba(0,0,0,0.04)'}},x:{grid:{display:false}}}}
+  });
+}, 300);
+</script>
