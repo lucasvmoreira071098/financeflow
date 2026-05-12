@@ -179,102 +179,12 @@ html,body{height:100%;font-family:var(--font);background:var(--bg3);color:var(--
 }
 </style>
 
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-  import { getFirestore, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyADoFB99aYIKJrkyUpGlMPcmRjyLMBoVps",
-    authDomain: "financeflow-d034c.firebaseapp.com",
-    projectId: "financeflow-d034c",
-    storageBucket: "financeflow-d034c.firebasestorage.app",
-    messagingSenderId: "1056159118649",
-    appId: "1:1056159118649:web:f72fa24fb21326270c24e8"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getFirestore(app);
-
-  let currentUser = null;
-  let unsubscribe = null;
-
-  // ── Auth state ──
-  onAuthStateChanged(auth, user => {
-    if (user) {
-      currentUser = user;
-      document.getElementById('auth-screen').style.display = 'none';
-      document.getElementById('app-screen').style.display = 'grid';
-      document.getElementById('user-email').textContent = user.email;
-      loadUserData();
-    } else {
-      currentUser = null;
-      document.getElementById('auth-screen').style.display = 'flex';
-      document.getElementById('app-screen').style.display = 'none';
-    }
-  });
-
-  // ── Load data ──
-  function loadUserData() {
-    if (unsubscribe) unsubscribe();
-    const ref = doc(db, 'users', currentUser.uid);
-    unsubscribe = onSnapshot(ref, snap => {
-      if (snap.exists()) {
-        const data = snap.data();
-        if (data.transactions) { transactions = data.transactions; renderRecent(); if(document.getElementById('page-gastos').classList.contains('active')) renderExpenses(); }
-        if (data.tasks) { tasks = data.tasks; renderAllTasks(); updateBadge(); }
-      }
-    });
-  }
-
-  // ── Save to Firestore ──
-  window.saveToCloud = async function() {
-    if (!currentUser) return;
-    try {
-      await setDoc(doc(db, 'users', currentUser.uid), { transactions, tasks }, { merge: true });
-    } catch(e) { console.error(e); }
-  };
-
-  // ── Login ──
-  window.doLogin = async function() {
-    const email = document.getElementById('auth-email').value.trim();
-    const pass = document.getElementById('auth-pass').value;
-    const err = document.getElementById('auth-err');
-    err.textContent = '';
-    try {
-      await signInWithEmailAndPassword(auth, email, pass);
-    } catch(e) {
-      err.textContent = e.code === 'auth/invalid-credential' ? 'E-mail ou senha incorretos.' : 'Erro ao entrar. Tente novamente.';
-    }
-  };
-
-  // ── Register ──
-  window.doRegister = async function() {
-    const email = document.getElementById('auth-email').value.trim();
-    const pass = document.getElementById('auth-pass').value;
-    const err = document.getElementById('auth-err');
-    err.textContent = '';
-    if (pass.length < 6) { err.textContent = 'A senha precisa ter pelo menos 6 caracteres.'; return; }
-    try {
-      await createUserWithEmailAndPassword(auth, email, pass);
-    } catch(e) {
-      err.textContent = e.code === 'auth/email-already-in-use' ? 'Este e-mail já está cadastrado.' : 'Erro ao criar conta.';
-    }
-  };
-
-  // ── Logout ──
-  window.doLogout = async function() {
-    if (unsubscribe) unsubscribe();
-    await signOut(auth);
-  };
-</script>
 
 </head>
 <body>
 
 <!-- AUTH SCREEN -->
-<div id="auth-screen" style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:#111110;">
+<div id="auth-screen" style="display:none;align-items:center;justify-content:center;min-height:100vh;background:#111110;">
   <div style="background:#1a1a18;border:1px solid rgba(255,255,255,0.1);border-radius:16px;padding:36px;width:340px;">
     <div style="text-align:center;margin-bottom:28px;">
       <div style="font-size:28px;color:#1D9E75;margin-bottom:8px;"><i class="ti ti-coin"></i></div>
@@ -295,7 +205,7 @@ html,body{height:100%;font-family:var(--font);background:var(--bg3);color:var(--
   </div>
 </div>
 
-<div id="app-screen" class="app" style="display:none;">
+<div id="app-screen" style="display:none"><div class="app">
 
 <!-- ═══ SIDEBAR ═══ -->
 <nav class="sidebar">
@@ -464,7 +374,7 @@ html,body{height:100%;font-family:var(--font);background:var(--bg3);color:var(--
   </div>
 
 </main>
-</div>
+</div></div>
 
 <!-- MODAL -->
 <div class="modal-overlay" id="modal">
@@ -697,6 +607,94 @@ document.addEventListener('keydown',e=>{
   </div>
 </div>
 
-</div><!-- /app-screen -->
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyADoFB99aYIKJrkyUpGlMPcmRjyLMBoVps",
+  authDomain: "financeflow-d034c.firebaseapp.com",
+  projectId: "financeflow-d034c",
+  storageBucket: "financeflow-d034c.firebasestorage.app",
+  messagingSenderId: "1056159118649",
+  appId: "1:1056159118649:web:f72fa24fb21326270c24e8"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+let currentUser = null;
+let unsubSnap = null;
+
+auth.onAuthStateChanged(user => {
+  if (user) {
+    currentUser = user;
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('app-screen').style.display = 'block';
+    document.getElementById('user-email').textContent = user.email;
+    loadUserData();
+  } else {
+    currentUser = null;
+    if (unsubSnap) { unsubSnap(); unsubSnap = null; }
+    document.getElementById('auth-screen').style.display = 'flex';
+    document.getElementById('app-screen').style.display = 'none';
+  }
+});
+
+function loadUserData() {
+  if (unsubSnap) unsubSnap();
+  const ref = db.collection('users').doc(currentUser.uid);
+  unsubSnap = ref.onSnapshot(snap => {
+    if (snap.exists) {
+      const data = snap.data();
+      if (data.transactions) {
+        transactions = data.transactions;
+        renderRecent();
+        if (document.getElementById('page-gastos').classList.contains('active')) renderExpenses();
+      }
+      if (data.tasks) {
+        tasks = data.tasks;
+        renderAllTasks();
+        updateBadge();
+      }
+    }
+  });
+}
+
+window.saveToCloud = function() {
+  if (!currentUser) return;
+  db.collection('users').doc(currentUser.uid).set({ transactions, tasks }, { merge: true })
+    .catch(e => console.error('Erro ao salvar:', e));
+};
+
+window.doLogin = function() {
+  const email = document.getElementById('auth-email').value.trim();
+  const pass = document.getElementById('auth-pass').value;
+  const err = document.getElementById('auth-err');
+  err.textContent = '';
+  auth.signInWithEmailAndPassword(email, pass).catch(e => {
+    err.textContent = e.code === 'auth/invalid-credential' || e.code === 'auth/wrong-password' || e.code === 'auth/user-not-found'
+      ? 'E-mail ou senha incorretos.' : 'Erro ao entrar. Tente novamente.';
+  });
+};
+
+window.doRegister = function() {
+  const email = document.getElementById('auth-email').value.trim();
+  const pass = document.getElementById('auth-pass').value;
+  const err = document.getElementById('auth-err');
+  err.textContent = '';
+  if (pass.length < 6) { err.textContent = 'A senha precisa ter pelo menos 6 caracteres.'; return; }
+  auth.createUserWithEmailAndPassword(email, pass).catch(e => {
+    err.textContent = e.code === 'auth/email-already-in-use'
+      ? 'Este e-mail já está cadastrado.' : 'Erro ao criar conta.';
+  });
+};
+
+window.doLogout = function() {
+  if (unsubSnap) { unsubSnap(); unsubSnap = null; }
+  auth.signOut();
+};
+</script>
+
 </body>
 </html>
