@@ -89,6 +89,7 @@ html,body{height:100%;font-family:var(--font);background:var(--bg3);color:var(--
 .fd{background:var(--blu);}.fw{background:var(--acc);}.fm{background:var(--warn);}
 .tprog-lbl{font-size:12px;color:var(--text2);white-space:nowrap;}
 .sec-lbl{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin:18px 0 8px;}
+.task-item{display:flex;align-items:center;gap:11px;padding:9px 10px;border-radius:var(--r);cursor:pointer;transition:background .1s;}
 .task-item:hover{background:var(--bg3);}
 .tcheck{width:18px;height:18px;border-radius:5px;border:1.5px solid var(--border2);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s;}
 .ckd{background:var(--blu);border-color:var(--blu);}.ckw{background:var(--acc);border-color:var(--acc);}.ckm{background:var(--warn);border-color:var(--warn);}
@@ -183,8 +184,95 @@ html,body{height:100%;font-family:var(--font);background:var(--bg3);color:var(--
 </head>
 <body>
 
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyADoFB99aYIKJrkyUpGlMPcmRjyLMBoVps",
+  authDomain: "financeflow-d034c.firebaseapp.com",
+  projectId: "financeflow-d034c",
+  storageBucket: "financeflow-d034c.firebasestorage.app",
+  messagingSenderId: "1056159118649",
+  appId: "1:1056159118649:web:f72fa24fb21326270c24e8"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+let currentUser = null;
+let unsubSnap = null;
+
+auth.onAuthStateChanged(user => {
+  if (user) {
+    currentUser = user;
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('app-screen').style.display = 'block';
+    document.getElementById('user-email').textContent = user.email;
+    loadUserData();
+  } else {
+    currentUser = null;
+    if (unsubSnap) { unsubSnap(); unsubSnap = null; }
+    document.getElementById('auth-screen').style.display = 'flex';
+    document.getElementById('app-screen').style.display = 'none';
+  }
+});
+
+function loadUserData() {
+  if (unsubSnap) unsubSnap();
+  const ref = db.collection('users').doc(currentUser.uid);
+  unsubSnap = ref.onSnapshot(snap => {
+    if (snap.exists) {
+      const data = snap.data();
+      if (data.transactions) {
+        transactions = data.transactions;
+        renderRecent();
+        if (document.getElementById('page-gastos').classList.contains('active')) renderExpenses();
+      }
+      if (data.tasks) {
+        tasks = data.tasks;
+        renderAllTasks();
+        updateBadge();
+      }
+    }
+  });
+}
+
+window.saveToCloud = function() {
+  if (!currentUser) return;
+  db.collection('users').doc(currentUser.uid).set({ transactions, tasks }, { merge: true })
+    .catch(e => console.error('Erro ao salvar:', e));
+};
+
+window.doLogin = function() {
+  const email = document.getElementById('auth-email').value.trim();
+  const pass = document.getElementById('auth-pass').value;
+  const err = document.getElementById('auth-err');
+  err.textContent = '';
+  auth.signInWithEmailAndPassword(email, pass).catch(e => {
+    err.textContent = e.code === 'auth/invalid-credential' || e.code === 'auth/wrong-password' || e.code === 'auth/user-not-found'
+      ? 'E-mail ou senha incorretos.' : 'Erro ao entrar. Tente novamente.';
+  });
+};
+
+window.doRegister = function() {
+  const email = document.getElementById('auth-email').value.trim();
+  const pass = document.getElementById('auth-pass').value;
+  const err = document.getElementById('auth-err');
+  err.textContent = '';
+  if (pass.length < 6) { err.textContent = 'A senha precisa ter pelo menos 6 caracteres.'; return; }
+  auth.createUserWithEmailAndPassword(email, pass).catch(e => {
+    err.textContent = e.code === 'auth/email-already-in-use'
+      ? 'Este e-mail já está cadastrado.' : 'Erro ao criar conta.';
+  });
+};
+
+window.doLogout = function() {
+  if (unsubSnap) { unsubSnap(); unsubSnap = null; }
+  auth.signOut();
+};
+</script>
 <!-- AUTH SCREEN -->
-<div id="auth-screen" style="display:none;align-items:center;justify-content:center;min-height:100vh;background:#111110;">
+<div id="auth-screen" style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:#111110;">
   <div style="background:#1a1a18;border:1px solid rgba(255,255,255,0.1);border-radius:16px;padding:36px;width:340px;">
     <div style="text-align:center;margin-bottom:28px;">
       <div style="font-size:28px;color:#1D9E75;margin-bottom:8px;"><i class="ti ti-coin"></i></div>
@@ -608,93 +696,8 @@ document.addEventListener('keydown',e=>{
 </div>
 
 
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script>
-const firebaseConfig = {
-  apiKey: "AIzaSyADoFB99aYIKJrkyUpGlMPcmRjyLMBoVps",
-  authDomain: "financeflow-d034c.firebaseapp.com",
-  projectId: "financeflow-d034c",
-  storageBucket: "financeflow-d034c.firebasestorage.app",
-  messagingSenderId: "1056159118649",
-  appId: "1:1056159118649:web:f72fa24fb21326270c24e8"
-};
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db = firebase.firestore();
-let currentUser = null;
-let unsubSnap = null;
 
-auth.onAuthStateChanged(user => {
-  if (user) {
-    currentUser = user;
-    document.getElementById('auth-screen').style.display = 'none';
-    document.getElementById('app-screen').style.display = 'block';
-    document.getElementById('user-email').textContent = user.email;
-    loadUserData();
-  } else {
-    currentUser = null;
-    if (unsubSnap) { unsubSnap(); unsubSnap = null; }
-    document.getElementById('auth-screen').style.display = 'flex';
-    document.getElementById('app-screen').style.display = 'none';
-  }
-});
 
-function loadUserData() {
-  if (unsubSnap) unsubSnap();
-  const ref = db.collection('users').doc(currentUser.uid);
-  unsubSnap = ref.onSnapshot(snap => {
-    if (snap.exists) {
-      const data = snap.data();
-      if (data.transactions) {
-        transactions = data.transactions;
-        renderRecent();
-        if (document.getElementById('page-gastos').classList.contains('active')) renderExpenses();
-      }
-      if (data.tasks) {
-        tasks = data.tasks;
-        renderAllTasks();
-        updateBadge();
-      }
-    }
-  });
-}
-
-window.saveToCloud = function() {
-  if (!currentUser) return;
-  db.collection('users').doc(currentUser.uid).set({ transactions, tasks }, { merge: true })
-    .catch(e => console.error('Erro ao salvar:', e));
-};
-
-window.doLogin = function() {
-  const email = document.getElementById('auth-email').value.trim();
-  const pass = document.getElementById('auth-pass').value;
-  const err = document.getElementById('auth-err');
-  err.textContent = '';
-  auth.signInWithEmailAndPassword(email, pass).catch(e => {
-    err.textContent = e.code === 'auth/invalid-credential' || e.code === 'auth/wrong-password' || e.code === 'auth/user-not-found'
-      ? 'E-mail ou senha incorretos.' : 'Erro ao entrar. Tente novamente.';
-  });
-};
-
-window.doRegister = function() {
-  const email = document.getElementById('auth-email').value.trim();
-  const pass = document.getElementById('auth-pass').value;
-  const err = document.getElementById('auth-err');
-  err.textContent = '';
-  if (pass.length < 6) { err.textContent = 'A senha precisa ter pelo menos 6 caracteres.'; return; }
-  auth.createUserWithEmailAndPassword(email, pass).catch(e => {
-    err.textContent = e.code === 'auth/email-already-in-use'
-      ? 'Este e-mail já está cadastrado.' : 'Erro ao criar conta.';
-  });
-};
-
-window.doLogout = function() {
-  if (unsubSnap) { unsubSnap(); unsubSnap = null; }
-  auth.signOut();
-};
-</script>
 
 </body>
 </html>
