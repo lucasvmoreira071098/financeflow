@@ -230,6 +230,7 @@ function loadUserData() {
       }
       if (data.tasks) {
         tasks = data.tasks;
+        checkAndReset();
         renderAllTasks();
         updateBadge();
       }
@@ -488,11 +489,7 @@ const SHORT=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','
 const NOW_M=4;
 
 let transactions=JSON.parse(localStorage.getItem('ff_tx')||'null')||[];
-let tasks=JSON.parse(localStorage.getItem('ff_tasks')||'null')||{
-  d:[{id:1,text:'Registrar gastos do dia',tag:'expense',prio:'high',done:false},{id:2,text:'Verificar saldo da conta',tag:'review',prio:'med',done:false},{id:3,text:'Guardar recibos e notas',tag:'review',prio:'low',done:false}],
-  w:[{id:4,text:'Revisar gastos da semana',tag:'review',prio:'high',done:false},{id:5,text:'Pagar faturas pendentes',tag:'expense',prio:'high',done:false},{id:6,text:'Conferir extrato bancário',tag:'review',prio:'med',done:false}],
-  m:[{id:7,text:'Fechar balanço mensal',tag:'review',prio:'high',done:false},{id:8,text:'Planejar orçamento próximo mês',tag:'review',prio:'med',done:false},{id:9,text:'Transferir para poupança',tag:'income',prio:'med',done:false}]
-};
+let tasks=JSON.parse(localStorage.getItem('ff_tasks')||'null')||{d:[],w:[],m:[]};
 const AD={
   2025:Array(12).fill({e:null,s:null}),
   2026:Array(12).fill({e:null,s:null}),
@@ -502,6 +499,53 @@ let curYear=2026;
 let annChart=null;
 
 function save(){localStorage.setItem('ff_tx',JSON.stringify(transactions));localStorage.setItem('ff_tasks',JSON.stringify(tasks));}
+
+function getWeekNumber(d){
+  const date=new Date(d);date.setHours(0,0,0,0);
+  date.setDate(date.getDate()+3-(date.getDay()+6)%7);
+  const week1=new Date(date.getFullYear(),0,4);
+  return 1+Math.round(((date-week1)/86400000-3+(week1.getDay()+6)%7)/7);
+}
+
+function checkAndReset(){
+  const now=new Date();
+  const todayStr=now.toISOString().slice(0,10);
+  const weekStr=now.getFullYear()+'-W'+getWeekNumber(now);
+  const monthStr=now.getFullYear()+'-'+(now.getMonth()+1);
+
+  const lastDay=localStorage.getItem('ff_lastday')||'';
+  const lastWeek=localStorage.getItem('ff_lastweek')||'';
+  const lastMonth=localStorage.getItem('ff_lastmonth')||'';
+
+  let changed=false;
+
+  if(lastDay && lastDay!==todayStr){
+    tasks.d.forEach(t=>t.done=false);
+    changed=true;
+    console.log('Tarefas diárias resetadas');
+  }
+  if(lastWeek && lastWeek!==weekStr){
+    tasks.w.forEach(t=>t.done=false);
+    changed=true;
+    console.log('Tarefas semanais resetadas');
+  }
+  if(lastMonth && lastMonth!==monthStr){
+    tasks.m.forEach(t=>t.done=false);
+    changed=true;
+    console.log('Tarefas mensais resetadas');
+  }
+
+  localStorage.setItem('ff_lastday',todayStr);
+  localStorage.setItem('ff_lastweek',weekStr);
+  localStorage.setItem('ff_lastmonth',monthStr);
+
+  if(changed){
+    save();
+    if(window.saveToCloud) window.saveToCloud();
+    renderAllTasks();
+    updateBadge();
+  }
+}
 function fmt(v){return v==null?'—':'R$ '+v.toLocaleString('pt-BR');}
 
 function showPage(name,el){
@@ -655,7 +699,7 @@ function initCharts(){
   new Chart(document.getElementById('balChart'),{type:'line',data:{labels:['1','5','10','15','20','25','30'],datasets:[{data:[0,0,0,0,0,0,0],borderColor:'#1D9E75',backgroundColor:'rgba(29,158,117,0.09)',tension:0.4,fill:true,pointRadius:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>'R$'+v.toLocaleString('pt-BR')},grid:{color:'rgba(0,0,0,0.04)'}},x:{grid:{display:false}}}}});
 }
 
-renderRecent();renderAllTasks();updateBadge();initCharts();
+renderRecent();renderAllTasks();updateBadge();initCharts();checkAndReset();
 document.getElementById('modal').addEventListener('click',function(e){if(e.target===this)closeModal();});
 document.getElementById('task-modal').addEventListener('click',function(e){if(e.target===this)closeTaskModal();});
 document.addEventListener('keydown',e=>{
