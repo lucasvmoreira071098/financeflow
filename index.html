@@ -89,7 +89,6 @@ html,body{height:100%;font-family:var(--font);background:var(--bg3);color:var(--
 .fd{background:var(--blu);}.fw{background:var(--acc);}.fm{background:var(--warn);}
 .tprog-lbl{font-size:12px;color:var(--text2);white-space:nowrap;}
 .sec-lbl{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin:18px 0 8px;}
-.task-item{display:flex;align-items:center;gap:11px;padding:9px 10px;border-radius:var(--r);cursor:pointer;transition:background .1s;}
 .task-item:hover{background:var(--bg3);}
 .tcheck{width:18px;height:18px;border-radius:5px;border:1.5px solid var(--border2);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s;}
 .ckd{background:var(--blu);border-color:var(--blu);}.ckw{background:var(--acc);border-color:var(--acc);}.ckm{background:var(--warn);border-color:var(--warn);}
@@ -98,6 +97,17 @@ html,body{height:100%;font-family:var(--font);background:var(--bg3);color:var(--
 .ttxt.done{text-decoration:line-through;color:var(--text3);}
 .ttag{display:inline-block;margin-left:8px;font-size:10px;padding:2px 7px;border-radius:8px;font-weight:500;}
 .tge{background:#FAECE7;color:#993C1D;}.tgi{background:#E1F5EE;color:#0F6E56;}.tgr{background:#FAEEDA;color:#854F0B;}
+
+.prio-sel-btn{flex:1;padding:8px 6px;border-radius:var(--r);border:1px solid var(--border2);background:none;color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);display:flex;align-items:center;justify-content:center;gap:5px;transition:all .15s;}
+.prio-sel-btn:hover{background:var(--bg3);}
+.prio-sel-btn.active[id=ps-high]{background:rgba(232,105,74,0.15);border-color:#E8694A;color:#E8694A;}
+.prio-sel-btn.active[id=ps-med]{background:rgba(245,166,35,0.15);border-color:#F5A623;color:#F5A623;}
+.prio-sel-btn.active[id=ps-low]{background:rgba(91,159,232,0.15);border-color:#5B9FE8;color:#5B9FE8;}
+
+.prio{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:600;padding:2px 7px;border-radius:6px;margin-left:6px;}
+.prio-high{background:rgba(232,105,74,0.15);color:#E8694A;}
+.prio-med{background:rgba(245,166,35,0.15);color:#F5A623;}
+.prio-low{background:rgba(91,159,232,0.15);color:#5B9FE8;}
 .add-row{display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:var(--r);color:var(--text3);font-size:13px;cursor:pointer;border:1px dashed var(--border2);margin-top:10px;transition:all .15s;background:none;width:100%;font-family:var(--font);}
 .add-row:hover{color:var(--text2);background:var(--bg3);}
 
@@ -189,7 +199,7 @@ html,body{height:100%;font-family:var(--font);background:var(--bg3);color:var(--
   <div class="saldo-box">
     <div class="saldo-month">Maio 2026</div>
     <div class="saldo-lbl">Saldo disponível</div>
-    <div class="saldo-val">R$ 2.340,00</div>
+    <div class="saldo-val">R$ 0,00</div>
   </div>
 </nav>
 
@@ -200,10 +210,10 @@ html,body{height:100%;font-family:var(--font);background:var(--bg3);color:var(--
   <div id="page-dashboard" class="page active">
     <div class="page-title">Dashboard</div>
     <div class="metrics">
-      <div class="metric"><div class="metric-lbl"><i class="ti ti-arrow-up-right" style="color:var(--acc)"></i>Receita</div><div class="metric-val vg">R$ 6.800</div><div class="metric-sub">+8% vs mês anterior</div></div>
-      <div class="metric"><div class="metric-lbl"><i class="ti ti-arrow-down-right" style="color:var(--dan)"></i>Gastos</div><div class="metric-val vr">R$ 4.460</div><div class="metric-sub">−3% vs mês anterior</div></div>
-      <div class="metric"><div class="metric-lbl"><i class="ti ti-piggy-bank" style="color:var(--blu)"></i>Poupança</div><div class="metric-val vb">R$ 2.340</div><div class="metric-sub">34% da renda</div></div>
-      <div class="metric"><div class="metric-lbl"><i class="ti ti-checklist" style="color:var(--warn)"></i>Tarefas</div><div class="metric-val vw" id="dash-tasks">3/13</div><div class="metric-sub">concluídas</div></div>
+      <div class="metric"><div class="metric-lbl"><i class="ti ti-arrow-up-right" style="color:var(--acc)"></i>Receita</div><div class="metric-val vg">R$ 0,00</div><div class="metric-sub">nenhuma entrada ainda</div></div>
+      <div class="metric"><div class="metric-lbl"><i class="ti ti-arrow-down-right" style="color:var(--dan)"></i>Gastos</div><div class="metric-val vr">R$ 0,00</div><div class="metric-sub">nenhum gasto ainda</div></div>
+      <div class="metric"><div class="metric-lbl"><i class="ti ti-piggy-bank" style="color:var(--blu)"></i>Poupança</div><div class="metric-val vb">R$ 0,00</div><div class="metric-sub">0% da renda</div></div>
+      <div class="metric"><div class="metric-lbl"><i class="ti ti-checklist" style="color:var(--warn)"></i>Tarefas</div><div class="metric-val vw" id="dash-tasks">0/0</div><div class="metric-sub">concluídas</div></div>
     </div>
     <div class="row2">
       <div class="card">
@@ -355,23 +365,15 @@ const TC={expense:'tge',income:'tgi',review:'tgr'};
 const SHORT=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 const NOW_M=4;
 
-let transactions=JSON.parse(localStorage.getItem('ff_tx')||'null')||[
-  {id:1,desc:'Aluguel',val:1500,type:'saida',cat:'Moradia',date:'10/05'},
-  {id:2,desc:'Salário',val:5000,type:'entrada',cat:'Salário',date:'05/05'},
-  {id:3,desc:'Mercado',val:320,type:'saida',cat:'Alimentação',date:'09/05'},
-  {id:4,desc:'Uber',val:45,type:'saida',cat:'Transporte',date:'08/05'},
-  {id:5,desc:'Freelance',val:1800,type:'entrada',cat:'Freelance',date:'07/05'},
-  {id:6,desc:'Academia',val:89,type:'saida',cat:'Saúde',date:'01/05'},
-  {id:7,desc:'Netflix',val:39,type:'saida',cat:'Lazer',date:'03/05'},
-];
+let transactions=JSON.parse(localStorage.getItem('ff_tx')||'null')||[];
 let tasks=JSON.parse(localStorage.getItem('ff_tasks')||'null')||{
-  d:[{id:1,text:'Registrar gastos do dia',tag:'expense',done:false},{id:2,text:'Verificar saldo da conta',tag:'review',done:true},{id:3,text:'Guardar recibos e notas',tag:'review',done:false},{id:4,text:'Verificar notificações do banco',tag:'review',done:false}],
-  w:[{id:5,text:'Revisar gastos da semana',tag:'review',done:false},{id:6,text:'Pagar faturas pendentes',tag:'expense',done:false},{id:7,text:'Conferir extrato bancário',tag:'review',done:true},{id:8,text:'Separar notas para controle',tag:'review',done:false}],
-  m:[{id:9,text:'Fechar balanço mensal',tag:'review',done:false},{id:10,text:'Planejar orçamento próximo mês',tag:'review',done:false},{id:11,text:'Transferir para poupança',tag:'income',done:false},{id:12,text:'Revisar metas financeiras',tag:'review',done:false},{id:13,text:'Declarar imposto de renda',tag:'review',done:false}]
+  d:[{id:1,text:'Registrar gastos do dia',tag:'expense',prio:'high',done:false},{id:2,text:'Verificar saldo da conta',tag:'review',prio:'med',done:false},{id:3,text:'Guardar recibos e notas',tag:'review',prio:'low',done:false}],
+  w:[{id:4,text:'Revisar gastos da semana',tag:'review',prio:'high',done:false},{id:5,text:'Pagar faturas pendentes',tag:'expense',prio:'high',done:false},{id:6,text:'Conferir extrato bancário',tag:'review',prio:'med',done:false}],
+  m:[{id:7,text:'Fechar balanço mensal',tag:'review',prio:'high',done:false},{id:8,text:'Planejar orçamento próximo mês',tag:'review',prio:'med',done:false},{id:9,text:'Transferir para poupança',tag:'income',prio:'med',done:false}]
 };
 const AD={
-  2025:[{e:5200,s:4100},{e:5200,s:4400},{e:5500,s:4200},{e:5500,s:4600},{e:5800,s:4500},{e:5800,s:4700},{e:6000,s:4800},{e:6000,s:5100},{e:6200,s:4900},{e:6200,s:5000},{e:6500,s:5300},{e:7200,s:5800}],
-  2026:[{e:6400,s:4800},{e:6400,s:5100},{e:6600,s:4700},{e:6800,s:5200},{e:6800,s:4460},{e:null,s:null},{e:null,s:null},{e:null,s:null},{e:null,s:null},{e:null,s:null},{e:null,s:null},{e:null,s:null}],
+  2025:Array(12).fill({e:null,s:null}),
+  2026:Array(12).fill({e:null,s:null}),
   2027:Array(12).fill({e:null,s:null})
 };
 let curYear=2026;
@@ -403,9 +405,13 @@ function renderTask(type){
   document.getElementById('tbar-'+type).style.width=pct+'%';
   document.getElementById('tlbl-'+type).textContent=`${done.length} de ${list.length} concluídas`;
   document.getElementById('pill-'+type).textContent=`${done.length}/${list.length}`;
+  const PL={high:'Alto',med:'Médio',low:'Baixo'};
+  const PC={high:'prio-high',med:'prio-med',low:'prio-low'};
+  const PI={high:'ti-flame',med:'ti-minus',low:'ti-arrow-down'};
   const make=t=>{
     const d=document.createElement('div');d.className='task-item';
-    d.innerHTML=`<div class="tcheck ${t.done?'ck'+type:''}"></div><div><span class="ttxt ${t.done?'done':''}">${t.text}</span><span class="ttag ${TC[t.tag]}">${TL[t.tag]}</span></div>`;
+    const prio=t.prio||'med';
+    d.innerHTML=`<div class="tcheck ${t.done?'ck'+type:''}"></div><div style="flex:1;display:flex;align-items:center;justify-content:space-between;gap:8px"><div><span class="ttxt ${t.done?'done':''}">${t.text}</span><span class="ttag ${TC[t.tag]}">${TL[t.tag]}</span></div><span class="prio ${PC[prio]}"><i class="ti ${PI[prio]}" style="font-size:10px"></i>${PL[prio]}</span></div>`;
     d.onclick=()=>{t.done=!t.done;renderTask(type);updateBadge();save();};return d;
   };
   const te=document.getElementById('ttodo-'+type),de=document.getElementById('tdone-'+type),se=document.getElementById('tsec-'+type+'-done');
@@ -419,10 +425,29 @@ function switchTab(type,el){
   document.querySelectorAll('.tpanel').forEach(p=>p.classList.remove('active'));
   el.classList.add('active');document.getElementById('tpanel-'+type).classList.add('active');
 }
+let _taskType=null;
 function addTask(type){
-  const text=prompt('Nome da tarefa:');if(!text)return;
-  tasks[type].push({id:Date.now(),text,tag:'review',done:false});
-  renderTask(type);updateBadge();save();
+  _taskType=type;
+  selectPrio('high');
+  document.getElementById('tm-text').value='';
+  document.getElementById('tm-tag').value='review';
+  document.getElementById('task-modal').classList.add('open');
+  setTimeout(()=>document.getElementById('tm-text').focus(),80);
+}
+function closeTaskModal(){document.getElementById('task-modal').classList.remove('open');}
+function selectPrio(p){
+  ['high','med','low'].forEach(x=>document.getElementById('ps-'+x).classList.remove('active'));
+  document.getElementById('ps-'+p).classList.add('active');
+  document.getElementById('task-modal').dataset.prio=p;
+}
+function saveTask(){
+  const text=document.getElementById('tm-text').value.trim();
+  if(!text)return;
+  const tag=document.getElementById('tm-tag').value;
+  const prio=document.getElementById('task-modal').dataset.prio||'high';
+  tasks[_taskType].push({id:Date.now(),text,tag,prio,done:false});
+  renderTask(_taskType);updateBadge();save();
+  closeTaskModal();
 }
 function updateBadge(){
   const n=Object.values(tasks).flat().filter(t=>!t.done).length;
@@ -453,20 +478,20 @@ function saveTransaction(){
 }
 
 function renderBudget(){
-  const B=[{cat:'Moradia',p:1600,s:1500},{cat:'Alimentação',p:800,s:320},{cat:'Transporte',p:300,s:45},{cat:'Saúde',p:200,s:89},{cat:'Lazer',p:400,s:39}];
+  const B=[{cat:'Moradia',p:0,s:0},{cat:'Alimentação',p:0,s:0},{cat:'Transporte',p:0,s:0},{cat:'Saúde',p:0,s:0},{cat:'Lazer',p:0,s:0}];
   const C=['#378ADD','#1D9E75','#EF9F27','#D87ABF','#D85A30'];
   document.getElementById('budget-bars').innerHTML=B.map((b,i)=>{
     const pct=Math.min(100,Math.round(b.s/b.p*100)),c=pct>90?'#D85A30':pct>70?'#EF9F27':C[i];
     return `<div class="bitem"><div class="bhead"><span class="blbl">${b.cat}</span><span class="bval">R$ ${b.s} / R$ ${b.p}</span></div><div class="btrack"><div class="bfill" style="width:${pct}%;background:${c}"></div></div></div>`;
   }).join('');
   document.getElementById('tips').innerHTML=[
-    {icon:'ti-bulb',text:'Alimentação está 60% abaixo do orçado. Considere aumentar a meta de poupança.'},
-    {icon:'ti-trending-down',text:'Transporte gastou apenas 15% do limite. Ótimo mês!'},
-    {icon:'ti-alert-circle',text:'Moradia consumiu 94% do orçamento. Fique atento ao limite.'},
+    {icon:'ti-bulb',text:'Defina metas de orçamento para cada categoria e acompanhe seus limites mensais.'},
+    {icon:'ti-trending-down',text:'Registre suas entradas e saídas diariamente para ter um controle preciso.'},
+    {icon:'ti-piggy-bank',text:'Tente poupar pelo menos 20% da sua renda mensal.'},
   ].map(t=>`<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)"><i class="ti ${t.icon}" style="font-size:16px;color:var(--acc);margin-top:2px"></i><span style="font-size:13px;color:var(--text2)">${t.text}</span></div>`).join('');
   setTimeout(()=>{
     if(window._bc)window._bc.destroy();
-    window._bc=new Chart(document.getElementById('budChart'),{type:'bar',data:{labels:['Moradia','Alimentação','Transp.','Saúde','Lazer'],datasets:[{label:'Planejado',data:[1600,800,300,200,400],backgroundColor:'rgba(55,138,221,0.2)',borderRadius:4,borderColor:'#378ADD',borderWidth:1},{label:'Realizado',data:[1500,320,45,89,39],backgroundColor:'#378ADD',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>'R$'+v},grid:{color:'rgba(0,0,0,0.04)'}},x:{grid:{display:false}}}}});
+    window._bc=new Chart(document.getElementById('budChart'),{type:'bar',data:{labels:['Moradia','Alimentação','Transp.','Saúde','Lazer'],datasets:[{label:'Planejado',data:[0,0,0,0,0],backgroundColor:'rgba(55,138,221,0.2)',borderRadius:4,borderColor:'#378ADD',borderWidth:1},{label:'Realizado',data:[0,0,0,0,0],backgroundColor:'#378ADD',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>'R$'+v},grid:{color:'rgba(0,0,0,0.04)'}},x:{grid:{display:false}}}}});
   },80);
 }
 
@@ -502,15 +527,51 @@ function renderAnnual(){
 function changeYear(d){const ys=Object.keys(AD).map(Number),nx=curYear+d;if(ys.includes(nx)){curYear=nx;renderAnnual();}}
 
 function initCharts(){
-  new Chart(document.getElementById('lineChart'),{type:'line',data:{labels:['Dez','Jan','Fev','Mar','Abr','Mai'],datasets:[{label:'Receita',data:[5200,5800,5500,6200,6000,6800],borderColor:'#1D9E75',backgroundColor:'rgba(29,158,117,0.07)',tension:0.4,fill:true,pointRadius:3,pointBackgroundColor:'#1D9E75'},{label:'Gastos',data:[4800,5100,4600,4900,4200,4460],borderColor:'#D85A30',backgroundColor:'rgba(216,90,48,0.05)',tension:0.4,fill:true,pointRadius:3,pointBackgroundColor:'#D85A30',borderDash:[4,3]}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>'R$'+v.toLocaleString('pt-BR')},grid:{color:'rgba(0,0,0,0.04)'}},x:{grid:{display:false}}}}});
+  new Chart(document.getElementById('lineChart'),{type:'line',data:{labels:['Dez','Jan','Fev','Mar','Abr','Mai'],datasets:[{label:'Receita',data:[0,0,0,0,0,0],borderColor:'#1D9E75',backgroundColor:'rgba(29,158,117,0.07)',tension:0.4,fill:true,pointRadius:3,pointBackgroundColor:'#1D9E75'},{label:'Gastos',data:[0,0,0,0,0,0],borderColor:'#D85A30',backgroundColor:'rgba(216,90,48,0.05)',tension:0.4,fill:true,pointRadius:3,pointBackgroundColor:'#D85A30',borderDash:[4,3]}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>'R$'+v.toLocaleString('pt-BR')},grid:{color:'rgba(0,0,0,0.04)'}},x:{grid:{display:false}}}}});
   new Chart(document.getElementById('donutChart'),{type:'doughnut',data:{labels:['Moradia','Alimentação','Transporte','Outros'],datasets:[{data:[35,22,18,25],backgroundColor:['#378ADD','#1D9E75','#EF9F27','#D85A30'],borderWidth:0,hoverOffset:4}]},options:{responsive:true,maintainAspectRatio:false,cutout:'68%',plugins:{legend:{display:false}}}});
-  new Chart(document.getElementById('barExp'),{type:'bar',data:{labels:['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'],datasets:[{label:'Esta semana',data:[120,45,280,90,65,320,40],backgroundColor:'#378ADD',borderRadius:4},{label:'Semana passada',data:[200,80,150,120,95,180,60],backgroundColor:'#B5D4F4',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>'R$'+v},grid:{color:'rgba(0,0,0,0.04)'}},x:{grid:{display:false}}}}});
-  new Chart(document.getElementById('balChart'),{type:'line',data:{labels:['1','5','10','15','20','25','30'],datasets:[{data:[3200,4800,3100,4600,2800,4200,2340],borderColor:'#1D9E75',backgroundColor:'rgba(29,158,117,0.09)',tension:0.4,fill:true,pointRadius:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>'R$'+v.toLocaleString('pt-BR')},grid:{color:'rgba(0,0,0,0.04)'}},x:{grid:{display:false}}}}});
+  new Chart(document.getElementById('barExp'),{type:'bar',data:{labels:['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'],datasets:[{label:'Esta semana',data:[0,0,0,0,0,0,0],backgroundColor:'#378ADD',borderRadius:4},{label:'Semana passada',data:[0,0,0,0,0,0,0],backgroundColor:'#B5D4F4',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>'R$'+v},grid:{color:'rgba(0,0,0,0.04)'}},x:{grid:{display:false}}}}});
+  new Chart(document.getElementById('balChart'),{type:'line',data:{labels:['1','5','10','15','20','25','30'],datasets:[{data:[0,0,0,0,0,0,0],borderColor:'#1D9E75',backgroundColor:'rgba(29,158,117,0.09)',tension:0.4,fill:true,pointRadius:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>'R$'+v.toLocaleString('pt-BR')},grid:{color:'rgba(0,0,0,0.04)'}},x:{grid:{display:false}}}}});
 }
 
 renderRecent();renderAllTasks();updateBadge();initCharts();
 document.getElementById('modal').addEventListener('click',function(e){if(e.target===this)closeModal();});
-document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+document.getElementById('task-modal').addEventListener('click',function(e){if(e.target===this)closeTaskModal();});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){closeModal();closeTaskModal();}
+  if(e.key==='Enter'&&document.getElementById('task-modal').classList.contains('open'))saveTask();
+});
 </script>
+
+<!-- MODAL NOVA TAREFA -->
+<div class="modal-overlay" id="task-modal">
+  <div class="modal">
+    <div class="modal-title">Nova tarefa <button class="modal-close" onclick="closeTaskModal()"><i class="ti ti-x"></i></button></div>
+    <div class="fg"><label>Descrição</label><input id="tm-text" placeholder="Ex: Pagar fatura do cartão" /></div>
+    <div class="fg">
+      <label>Categoria</label>
+      <select id="tm-tag">
+        <option value="expense">Gasto</option>
+        <option value="income">Receita</option>
+        <option value="review" selected>Revisão</option>
+      </select>
+    </div>
+    <div class="fg">
+      <label>Prioridade</label>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:2px">
+        <button class="prio-sel-btn active" id="ps-high" onclick="selectPrio('high')">
+          <i class="ti ti-flame" style="font-size:14px"></i> Alto
+        </button>
+        <button class="prio-sel-btn" id="ps-med" onclick="selectPrio('med')">
+          <i class="ti ti-minus" style="font-size:14px"></i> Médio
+        </button>
+        <button class="prio-sel-btn" id="ps-low" onclick="selectPrio('low')">
+          <i class="ti ti-arrow-down" style="font-size:14px"></i> Baixo
+        </button>
+      </div>
+    </div>
+    <button class="sbtn" onclick="saveTask()">Adicionar tarefa</button>
+  </div>
+</div>
+
 </body>
 </html>
