@@ -178,9 +178,124 @@ html,body{height:100%;font-family:var(--font);background:var(--bg3);color:var(--
   .metrics,.row2,.row2eq,.sum3{grid-template-columns:1fr;}
 }
 </style>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { getFirestore, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyADoFB99aYIKJrkyUpGlMPcmRjyLMBoVps",
+    authDomain: "financeflow-d034c.firebaseapp.com",
+    projectId: "financeflow-d034c",
+    storageBucket: "financeflow-d034c.firebasestorage.app",
+    messagingSenderId: "1056159118649",
+    appId: "1:1056159118649:web:f72fa24fb21326270c24e8"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  let currentUser = null;
+  let unsubscribe = null;
+
+  // ── Auth state ──
+  onAuthStateChanged(auth, user => {
+    if (user) {
+      currentUser = user;
+      document.getElementById('auth-screen').style.display = 'none';
+      document.getElementById('app-screen').style.display = 'grid';
+      document.getElementById('user-email').textContent = user.email;
+      loadUserData();
+    } else {
+      currentUser = null;
+      document.getElementById('auth-screen').style.display = 'flex';
+      document.getElementById('app-screen').style.display = 'none';
+    }
+  });
+
+  // ── Load data ──
+  function loadUserData() {
+    if (unsubscribe) unsubscribe();
+    const ref = doc(db, 'users', currentUser.uid);
+    unsubscribe = onSnapshot(ref, snap => {
+      if (snap.exists()) {
+        const data = snap.data();
+        if (data.transactions) { transactions = data.transactions; renderRecent(); if(document.getElementById('page-gastos').classList.contains('active')) renderExpenses(); }
+        if (data.tasks) { tasks = data.tasks; renderAllTasks(); updateBadge(); }
+      }
+    });
+  }
+
+  // ── Save to Firestore ──
+  window.saveToCloud = async function() {
+    if (!currentUser) return;
+    try {
+      await setDoc(doc(db, 'users', currentUser.uid), { transactions, tasks }, { merge: true });
+    } catch(e) { console.error(e); }
+  };
+
+  // ── Login ──
+  window.doLogin = async function() {
+    const email = document.getElementById('auth-email').value.trim();
+    const pass = document.getElementById('auth-pass').value;
+    const err = document.getElementById('auth-err');
+    err.textContent = '';
+    try {
+      await signInWithEmailAndPassword(auth, email, pass);
+    } catch(e) {
+      err.textContent = e.code === 'auth/invalid-credential' ? 'E-mail ou senha incorretos.' : 'Erro ao entrar. Tente novamente.';
+    }
+  };
+
+  // ── Register ──
+  window.doRegister = async function() {
+    const email = document.getElementById('auth-email').value.trim();
+    const pass = document.getElementById('auth-pass').value;
+    const err = document.getElementById('auth-err');
+    err.textContent = '';
+    if (pass.length < 6) { err.textContent = 'A senha precisa ter pelo menos 6 caracteres.'; return; }
+    try {
+      await createUserWithEmailAndPassword(auth, email, pass);
+    } catch(e) {
+      err.textContent = e.code === 'auth/email-already-in-use' ? 'Este e-mail já está cadastrado.' : 'Erro ao criar conta.';
+    }
+  };
+
+  // ── Logout ──
+  window.doLogout = async function() {
+    if (unsubscribe) unsubscribe();
+    await signOut(auth);
+  };
+</script>
+
 </head>
 <body>
-<div class="app">
+
+<!-- AUTH SCREEN -->
+<div id="auth-screen" style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:#111110;">
+  <div style="background:#1a1a18;border:1px solid rgba(255,255,255,0.1);border-radius:16px;padding:36px;width:340px;">
+    <div style="text-align:center;margin-bottom:28px;">
+      <div style="font-size:28px;color:#1D9E75;margin-bottom:8px;"><i class="ti ti-coin"></i></div>
+      <div style="font-size:20px;font-weight:700;color:#f0efe9;">FinanceFlow</div>
+      <div style="font-size:13px;color:#9a9a94;margin-top:4px;">Controle financeiro pessoal</div>
+    </div>
+    <div style="margin-bottom:12px;">
+      <label style="font-size:11px;font-weight:600;color:#9a9a94;display:block;margin-bottom:5px;">E-mail</label>
+      <input id="auth-email" type="email" placeholder="seu@email.com" onkeydown="if(event.key==='Enter')doLogin()" style="width:100%;padding:10px 12px;font-size:13px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:#111110;color:#f0efe9;outline:none;font-family:inherit;" />
+    </div>
+    <div style="margin-bottom:8px;">
+      <label style="font-size:11px;font-weight:600;color:#9a9a94;display:block;margin-bottom:5px;">Senha</label>
+      <input id="auth-pass" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()" style="width:100%;padding:10px 12px;font-size:13px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:#111110;color:#f0efe9;outline:none;font-family:inherit;" />
+    </div>
+    <div id="auth-err" style="font-size:12px;color:#E8694A;min-height:18px;margin-bottom:10px;"></div>
+    <button onclick="doLogin()" style="width:100%;padding:10px;background:#1D9E75;color:white;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:8px;">Entrar</button>
+    <button onclick="doRegister()" style="width:100%;padding:10px;background:none;color:#1D9E75;border:1px solid #1D9E75;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">Criar conta</button>
+  </div>
+</div>
+
+<div id="app-screen" class="app" style="display:none;">
 
 <!-- ═══ SIDEBAR ═══ -->
 <nav class="sidebar">
@@ -195,6 +310,15 @@ html,body{height:100%;font-family:var(--font);background:var(--bg3);color:var(--
     <button class="nav-item" onclick="showPage('gastos',this)"><i class="ti ti-arrow-up-circle"></i> Gastos</button>
     <button class="nav-item" onclick="showPage('orcamento',this)"><i class="ti ti-target"></i> Orçamento</button>
     <button class="nav-item" onclick="showPage('anual',this)"><i class="ti ti-calendar-stats"></i> Panorama anual</button>
+  </div>
+  <div style="padding:0 10px;margin-bottom:8px;">
+    <div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:10px 12px;display:flex;align-items:center;justify-content:space-between;gap:8px;">
+      <div style="display:flex;align-items:center;gap:7px;min-width:0;">
+        <i class="ti ti-user-circle" style="font-size:18px;color:#1D9E75;flex-shrink:0;"></i>
+        <span id="user-email" style="font-size:11px;color:#9a9a94;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
+      </div>
+      <button onclick="doLogout()" title="Sair" style="background:none;border:none;cursor:pointer;color:#5a5a56;padding:2px;font-size:16px;flex-shrink:0;"><i class="ti ti-logout"></i></button>
+    </div>
   </div>
   <div class="saldo-box">
     <div class="saldo-month">Maio 2026</div>
@@ -412,7 +536,7 @@ function renderTask(type){
     const d=document.createElement('div');d.className='task-item';
     const prio=t.prio||'med';
     d.innerHTML=`<div class="tcheck ${t.done?'ck'+type:''}"></div><div style="flex:1;display:flex;align-items:center;justify-content:space-between;gap:8px"><div><span class="ttxt ${t.done?'done':''}">${t.text}</span><span class="ttag ${TC[t.tag]}">${TL[t.tag]}</span></div><span class="prio ${PC[prio]}"><i class="ti ${PI[prio]}" style="font-size:10px"></i>${PL[prio]}</span></div>`;
-    d.onclick=()=>{t.done=!t.done;renderTask(type);updateBadge();save();};return d;
+    d.onclick=()=>{t.done=!t.done;renderTask(type);updateBadge();save(); if(window.saveToCloud) window.saveToCloud();};return d;
   };
   const te=document.getElementById('ttodo-'+type),de=document.getElementById('tdone-'+type),se=document.getElementById('tsec-'+type+'-done');
   te.innerHTML='';de.innerHTML='';
@@ -446,7 +570,7 @@ function saveTask(){
   const tag=document.getElementById('tm-tag').value;
   const prio=document.getElementById('task-modal').dataset.prio||'high';
   tasks[_taskType].push({id:Date.now(),text,tag,prio,done:false});
-  renderTask(_taskType);updateBadge();save();
+  renderTask(_taskType);updateBadge();save(); if(window.saveToCloud) window.saveToCloud();
   closeTaskModal();
 }
 function updateBadge(){
@@ -473,7 +597,7 @@ function saveTransaction(){
   const desc=document.getElementById('m-desc').value.trim(),val=parseFloat(document.getElementById('m-val').value),type=document.getElementById('m-type').value,cat=document.getElementById('m-cat').value;
   if(!desc||isNaN(val)||val<=0)return;
   transactions.unshift({id:Date.now(),desc,val,type,cat,date:new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})});
-  save();closeModal();renderExpenses();renderRecent();
+  save(); if(window.saveToCloud) window.saveToCloud();closeModal();renderExpenses();renderRecent();
   document.getElementById('m-desc').value='';document.getElementById('m-val').value='';
 }
 
@@ -573,5 +697,6 @@ document.addEventListener('keydown',e=>{
   </div>
 </div>
 
+</div><!-- /app-screen -->
 </body>
 </html>
