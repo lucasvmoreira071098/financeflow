@@ -97,7 +97,7 @@ html,body{height:100%;font-family:var(--font);background:var(--bg3);color:var(--
 .ttxt{font-size:13px;color:var(--text);}
 .ttxt.done{text-decoration:line-through;color:var(--text3);}
 .ttag{display:inline-block;margin-left:8px;font-size:10px;padding:2px 7px;border-radius:8px;font-weight:500;}
-.tge{background:#FAECE7;color:#993C1D;}.tgi{background:#E1F5EE;color:#0F6E56;}.tgr{background:#FAEEDA;color:#854F0B;}
+.tgp{background:#EEF2FF;color:#3730A3;}.tgw{background:#F0FDF4;color:#166534;}.tgs{background:#FEF9C3;color:#854D0E;}.tgh{background:#FDF2F8;color:#9D174D;}
 
 .prio-sel-btn{flex:1;padding:8px 6px;border-radius:var(--r);border:1px solid var(--border2);background:none;color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);display:flex;align-items:center;justify-content:center;gap:5px;transition:all .15s;}
 .prio-sel-btn:hover{background:var(--bg3);}
@@ -234,6 +234,15 @@ function loadUserData() {
         renderAllTasks();
         updateBadge();
       }
+    } else {
+      // No data in Firestore — start fresh, clear localStorage
+      localStorage.clear();
+      transactions = [];
+      tasks = {d:[], w:[], m:[]};
+      renderRecent();
+      renderAllTasks();
+      updateBadge();
+      save();
     }
   });
 }
@@ -360,7 +369,7 @@ window.doLogout = function() {
 
   <!-- TAREFAS -->
   <div id="page-tarefas" class="page">
-    <div class="page-title">Tarefas financeiras</div>
+    <div class="page-title">Tarefas</div>
     <div class="card">
       <div class="tab-bar">
         <button class="tab-btn active" onclick="switchTab('d',this)"><span class="tdot dd"></span>Diário<span class="cpill pd" id="pill-d">0/0</span></button>
@@ -483,8 +492,8 @@ window.doLogout = function() {
 <script>
 const CI={Moradia:'ti-home',Alimentação:'ti-tools-kitchen-2',Transporte:'ti-car',Saúde:'ti-heart',Lazer:'ti-device-gamepad-2',Outros:'ti-dots',Salário:'ti-briefcase',Freelance:'ti-terminal'};
 const CC={Moradia:'#E6F1FB',Alimentação:'#E1F5EE',Transporte:'#FAEEDA',Saúde:'#FBEAF0',Lazer:'#EEEDFE',Outros:'#F1EFE8',Salário:'#EAF3DE',Freelance:'#EAF3DE'};
-const TL={expense:'gasto',income:'receita',review:'revisão'};
-const TC={expense:'tge',income:'tgi',review:'tgr'};
+const TL={personal:'pessoal',work:'trabalho',study:'estudo',health:'saúde'};
+const TC={personal:'tgp',work:'tgw',study:'tgs',health:'tgh'};
 const SHORT=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 const NOW_M=4;
 
@@ -533,6 +542,17 @@ function checkAndReset(){
     tasks.m.forEach(t=>t.done=false);
     changed=true;
     console.log('Tarefas mensais resetadas');
+    // Auto-add recurring transactions for new month
+    const recurring=transactions.filter(t=>t.recurring&&t.recday);
+    const newMonth=now.getMonth()+1;
+    const newYear=now.getFullYear();
+    recurring.forEach(t=>{
+      const dayStr=String(t.recday).padStart(2,'0')+'/'+String(newMonth).padStart(2,'0');
+      const alreadyAdded=transactions.some(x=>x.desc===t.desc&&x.date===dayStr&&x.recurring);
+      if(!alreadyAdded){
+        transactions.unshift({...t,id:Date.now()+Math.random(),date:dayStr});
+      }
+    });
   }
 
   localStorage.setItem('ff_lastday',todayStr);
@@ -596,7 +616,7 @@ function addTask(type){
   _taskType=type;
   selectPrio('high');
   document.getElementById('tm-text').value='';
-  document.getElementById('tm-tag').value='review';
+  document.getElementById('tm-tag').value='personal';
   document.getElementById('task-modal').classList.add('open');
   setTimeout(()=>document.getElementById('tm-text').focus(),80);
 }
@@ -629,16 +649,40 @@ function renderExpenses(){
   document.getElementById('exp-list').innerHTML=fl.length?fl.map(t=>`
     <div class="exp-row">
       <div class="exp-icon" style="background:${CC[t.cat]||'#F1EFE8'}"><i class="ti ${CI[t.cat]||'ti-dots'}" style="color:#888"></i></div>
-      <div class="exp-info"><div class="exp-name">${t.desc}</div><div class="exp-cat">${t.cat} · ${t.date}</div></div>
+      <div class="exp-info"><div class="exp-name">${t.desc}${t.recurring?'<span style="font-size:10px;background:rgba(91,159,232,0.15);color:#5B9FE8;padding:1px 6px;border-radius:6px;margin-left:7px;font-weight:600;">↻ recorrente</span>':''}</div><div class="exp-cat">${t.cat} · ${t.date}${t.recday?' · todo dia '+t.recday:''}</div></div>
       <div class="exp-amt ${t.type==='saida'?'neg':'pos'}">${t.type==='saida'?'−':'+'}R$ ${t.val.toLocaleString('pt-BR')}</div>
     </div>`).join(''):'<div style="padding:24px;text-align:center;color:var(--text3);font-size:13px">Nenhuma transação encontrada</div>';
 }
-function openModal(){document.getElementById('modal').classList.add('open');}
+let _recurring=false;
+function toggleRecurring(){
+  _recurring=!_recurring;
+  const chk=document.getElementById('rec-check');
+  const fields=document.getElementById('rec-fields');
+  if(_recurring){
+    chk.style.background='var(--acc)';chk.style.borderColor='var(--acc)';chk.innerHTML='<span style="font-size:11px;color:white;font-weight:700;">✓</span>';
+    fields.style.display='block';
+  } else {
+    chk.style.background='';chk.style.borderColor='var(--border2)';chk.innerHTML='';
+    fields.style.display='none';
+  }
+}
+function openModal(){
+  _recurring=false;
+  document.getElementById('rec-check').style.background='';
+  document.getElementById('rec-check').style.borderColor='var(--border2)';
+  document.getElementById('rec-check').innerHTML='';
+  document.getElementById('rec-fields').style.display='none';
+  document.getElementById('m-recday').value='';
+  document.getElementById('modal').classList.add('open');
+}
 function closeModal(){document.getElementById('modal').classList.remove('open');}
 function saveTransaction(){
   const desc=document.getElementById('m-desc').value.trim(),val=parseFloat(document.getElementById('m-val').value),type=document.getElementById('m-type').value,cat=document.getElementById('m-cat').value;
   if(!desc||isNaN(val)||val<=0)return;
-  transactions.unshift({id:Date.now(),desc,val,type,cat,date:new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})});
+  const recday=_recurring?parseInt(document.getElementById('m-recday').value)||1:null;
+  const tx={id:Date.now(),desc,val,type,cat,date:new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})};
+  if(_recurring&&recday){tx.recurring=true;tx.recday=recday;}
+  transactions.unshift(tx);
   save(); if(window.saveToCloud) window.saveToCloud();closeModal();renderExpenses();renderRecent();
   document.getElementById('m-desc').value='';document.getElementById('m-val').value='';
 }
@@ -716,9 +760,10 @@ document.addEventListener('keydown',e=>{
     <div class="fg">
       <label>Categoria</label>
       <select id="tm-tag">
-        <option value="expense">Gasto</option>
-        <option value="income">Receita</option>
-        <option value="review" selected>Revisão</option>
+        <option value="personal">Pessoal</option>
+        <option value="work">Trabalho</option>
+        <option value="study">Estudo</option>
+        <option value="health" >Saúde</option>
       </select>
     </div>
     <div class="fg">
