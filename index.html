@@ -484,6 +484,18 @@ window.doLogout = function() {
       <div class="fg"><label>Tipo</label><select id="m-type"><option value="saida">Saída</option><option value="entrada">Entrada</option></select></div>
     </div>
     <div class="fg"><label>Categoria</label><select id="m-cat"><option>Moradia</option><option>Alimentação</option><option>Transporte</option><option>Saúde</option><option>Lazer</option><option>Outros</option></select></div>
+    <div class="fg">
+      <div onclick="toggleRecurring()" style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg3);border-radius:var(--r);border:1px solid var(--border2);cursor:pointer;">
+        <div id="rec-check" style="width:18px;height:18px;border-radius:5px;border:1.5px solid var(--border2);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s;"></div>
+        <div>
+          <div style="font-size:13px;color:var(--text);font-weight:500;">Recorrente todo mês</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:1px;">Entra automaticamente no dia escolhido</div>
+        </div>
+      </div>
+    </div>
+    <div id="rec-fields" style="display:none;">
+      <div class="fg"><label>Dia do mês que entra</label><input id="m-recday" type="number" min="1" max="31" placeholder="Ex: 5 (todo dia 5)"/></div>
+    </div>
     <button class="sbtn" onclick="saveTransaction()">Salvar transação</button>
   </div>
 </div>
@@ -668,11 +680,12 @@ function toggleRecurring(){
 }
 function openModal(){
   _recurring=false;
-  document.getElementById('rec-check').style.background='';
-  document.getElementById('rec-check').style.borderColor='var(--border2)';
-  document.getElementById('rec-check').innerHTML='';
-  document.getElementById('rec-fields').style.display='none';
-  document.getElementById('m-recday').value='';
+  const rc=document.getElementById('rec-check');
+  const rf=document.getElementById('rec-fields');
+  const rd=document.getElementById('m-recday');
+  if(rc){rc.style.background='';rc.style.borderColor='var(--border2)';rc.innerHTML='';}
+  if(rf)rf.style.display='none';
+  if(rd)rd.value='';
   document.getElementById('modal').classList.add('open');
 }
 function closeModal(){document.getElementById('modal').classList.remove('open');}
